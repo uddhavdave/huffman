@@ -18,5 +18,5 @@ serialize the Huffman tree and traverse it directly for a cleaner approach but i
 seems to be a norm to use tables for this.
 
 ## TODO
-- [] Add multilevel table creation for complex data
-- [] Improve the algorithm by recognizing patterns and encoding them
+- [ ] Add multilevel table creation for complex data
+- [ ] Improve the algorithm by recognizing patterns and encoding them
