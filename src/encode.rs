@@ -10,7 +10,7 @@ use std::{
 
 #[cfg(feature = "alloc")]
 pub fn encode(mut text: String) -> Result<Vec<u8>> {
-    // We add a Psuedo EOf to the string
+    // We add a Psuedo EOF to the string
     // This will indicate end of stream while decompression
     text.push(PSEUDO_EOF_CHAR);
 
@@ -20,7 +20,7 @@ pub fn encode(mut text: String) -> Result<Vec<u8>> {
         freq_map.entry(i).and_modify(|val| *val += 1).or_insert(1);
     }
 
-    // Minimun Frequency Tree ensures that the first two elements in the queue
+    // Minimun Frequency Queue ensures that the first two elements in the queue
     // are the least occuring characters.
     let mut min_freq_pqueue: BinaryHeap<Reverse<HuffTree>> = BinaryHeap::new();
     for (letter, count) in freq_map.iter() {
@@ -35,7 +35,7 @@ pub fn encode(mut text: String) -> Result<Vec<u8>> {
     // Keep merging till the queue has only one element which will be the huffman
     // tree. First two elements are merged in each iteration to create a subtree
     // which will then, according to its tree frequency will be merged further.
-    // It is helpful to think of each node as a tree itself.
+    // This will generate the most optimal tree for the input.
     while min_freq_pqueue.len() >= 2 {
         let new_node = min_freq_pqueue
             .pop()
@@ -46,8 +46,6 @@ pub fn encode(mut text: String) -> Result<Vec<u8>> {
     }
 
     let huff_tree: HuffTree = min_freq_pqueue.pop().unwrap().0;
-
-    // HashMap for easy indexing
     let huff_table = huff_tree.get_huff_table();
 
     for letter in text.chars() {
@@ -63,13 +61,13 @@ pub fn encode(mut text: String) -> Result<Vec<u8>> {
         }
     }
 
-    // Needed for serializing the data along with the table as a whole structure.
+    // Structure for encoding the data along with the Huffman table.
     let data = EncodedData {
         table: huff_table,
         data: bv.into_vec(),
     };
 
-    // Serialize to CBOR.
+    // Serialize in CBOR Format
     let mut cbor_serializer = CBORSerializer::new(Vec::new());
     data.serialize(&mut cbor_serializer)?;
 
