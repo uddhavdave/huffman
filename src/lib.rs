@@ -1,6 +1,8 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-/// This constnant is used as an end of file character which will be useful in decoding.
+mod error;
+
+/// This constant is used as an end of file character which will be useful in decoding.
 pub const PSEUDO_EOF_CHAR: char = '■';
 
 #[derive(Serialize, Deserialize, Default)]

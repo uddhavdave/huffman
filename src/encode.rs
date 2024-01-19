@@ -1,4 +1,4 @@
-use anyhow::Result;
+use crate::error::EncodeError;
 use bitvec::prelude::*;
 use huffman::{EncodedData, HuffTree, PSEUDO_EOF_CHAR};
 use serde::ser::Serialize as SerializeTrait;
@@ -9,8 +9,10 @@ use std::{
 };
 
 #[cfg(feature = "alloc")]
-pub fn encode(mut text: String) -> Result<Vec<u8>> {
-    // We add a Psuedo EOF to the string
+pub fn encode(input: &str) -> Result<Vec<u8>, EncodeError> {
+    let mut text = input.to_string();
+
+    // We add a Psuedo EOf to the string
     // This will indicate end of stream while decompression
     text.push(PSEUDO_EOF_CHAR);
 
@@ -50,12 +52,12 @@ pub fn encode(mut text: String) -> Result<Vec<u8>> {
 
     for letter in text.chars() {
         if let Some(coding) = huff_table.map.get(&letter) {
-            println!("Letter : {} , Coding : {}", letter, coding);
+            // println!("Letter : {} , Coding : {}", letter, coding);
             for bit in coding.chars() {
                 match bit {
                     '0' => bv.push(false),
                     '1' => bv.push(true),
-                    _ => panic!(),
+                    _ => return Err(EncodeError::DataCorrupted),
                 }
             }
         }
