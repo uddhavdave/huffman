@@ -1,6 +1,6 @@
 use crate::error::EncodeError;
 use bitvec::prelude::*;
-use huffman::{EncodedData, HuffTree, PSEUDO_EOF_CHAR};
+use huffman::{EncodedData, HuffTable, HuffTree, PSEUDO_EOF_CHAR};
 use serde::ser::Serialize as SerializeTrait;
 use serde_cbor::ser::Serializer as CBORSerializer;
 use std::{
@@ -8,21 +8,17 @@ use std::{
     collections::{BinaryHeap, HashMap},
 };
 
-pub fn encode(input: &str) -> Result<Vec<u8>, EncodeError> {
-    let mut text = input.to_string();
-
-    // We add a Pseudo EOF to the string
-    // This will indicate end of stream while decompression
-    text.push(PSEUDO_EOF_CHAR);
-
-    let mut bv = bitvec![u8, Msb0;];
+pub fn build_freq_map(text: &str) -> HashMap<char, u32> {
     let mut freq_map: HashMap<char, u32> = HashMap::new();
     for i in text.chars() {
         freq_map.entry(i).and_modify(|val| *val += 1).or_insert(1);
     }
+    freq_map
+}
 
-    // Minimun Frequency Queue ensures that the first two elements in the queue
-    // are the least occuring characters.
+pub fn build_tree(freq_map: &HashMap<char, u32>) -> HuffTree {
+    // Minimum Frequency Queue ensures that the first two elements in the queue
+    // are the least occurring characters.
     let mut min_freq_pqueue: BinaryHeap<Reverse<HuffTree>> = BinaryHeap::new();
     for (letter, count) in freq_map.iter() {
         let new_node = HuffTree {
@@ -46,12 +42,13 @@ pub fn encode(input: &str) -> Result<Vec<u8>, EncodeError> {
         min_freq_pqueue.push(Reverse(new_node))
     }
 
-    let huff_tree: HuffTree = min_freq_pqueue.pop().unwrap().0;
-    let huff_table = huff_tree.get_huff_table();
+    min_freq_pqueue.pop().unwrap().0
+}
 
+pub fn encode_with_table(text: &str, huff_table: &HuffTable) -> Result<BitVec<u8, Msb0>, EncodeError> {
+    let mut bv = bitvec![u8, Msb0;];
     for letter in text.chars() {
         if let Some(coding) = huff_table.map.get(&letter) {
-            // println!("Letter : {} , Coding : {}", letter, coding);
             for bit in coding.chars() {
                 match bit {
                     '0' => bv.push(false),
@@ -61,6 +58,20 @@ pub fn encode(input: &str) -> Result<Vec<u8>, EncodeError> {
             }
         }
     }
+    Ok(bv)
+}
+
+pub fn encode(input: &str) -> Result<Vec<u8>, EncodeError> {
+    let mut text = input.to_string();
+
+    // We add a Pseudo EOF to the string
+    // This will indicate end of stream while decompression
+    text.push(PSEUDO_EOF_CHAR);
+
+    let freq_map = build_freq_map(&text);
+    let huff_tree = build_tree(&freq_map);
+    let huff_table = huff_tree.get_huff_table();
+    let bv = encode_with_table(&text, &huff_table)?;
 
     // Structure for encoding the data along with the Huffman table.
     let data = EncodedData {

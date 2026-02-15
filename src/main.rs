@@ -2,6 +2,7 @@ mod encode;
 use encode::encode;
 mod decode;
 mod error;
+mod visualize;
 use clap::Parser;
 use decode::decode;
 use std::{io::Read, process::ExitCode};
@@ -15,6 +16,8 @@ struct HuffmanCli {
     encode: bool,
     #[arg(short, long)]
     decode: bool,
+    #[arg(short, long)]
+    verbose: bool,
 }
 fn main() -> ExitCode {
     // Define the command-line interface
@@ -25,7 +28,12 @@ fn main() -> ExitCode {
         read_input(&mut buffer);
 
         if args.encode {
-            match encode(String::from_utf8(buffer).expect("Invalid Input").trim()) {
+            let input = String::from_utf8(buffer).expect("Invalid Input");
+            let input = input.trim();
+            if args.verbose {
+                visualize::visualize(input);
+            }
+            match encode(input) {
                 Ok(data) => println!("{}", hex::encode(data)),
                 Err(e) => {
                     eprintln!("Encode failed with: {}", e);

@@ -65,6 +65,42 @@ impl HuffTree {
             _ => {}
         }
     }
+
+    pub fn print_tree(&self, prefix: &str, is_left: bool, is_root: bool) {
+        let connector = if is_root {
+            ""
+        } else if is_left {
+            "├── "
+        } else {
+            "└── "
+        };
+
+        let label = if let Some(ch) = self.character {
+            let display = match ch {
+                ' ' => "SP".to_string(),
+                '\n' => "LF".to_string(),
+                '\t' => "TAB".to_string(),
+                c if c == PSEUDO_EOF_CHAR => "EOF".to_string(),
+                c => format!("'{}'", c),
+            };
+            format!("{} (freq: {})", display, self.freq)
+        } else {
+            format!("[{}]", self.freq)
+        };
+
+        eprintln!("{}{}{}", prefix, connector, label);
+
+        let child_prefix = if is_root {
+            String::new()
+        } else {
+            format!("{}{}", prefix, if is_left { "│   " } else { "    " })
+        };
+
+        if let [Some(left), Some(right)] = &self.child {
+            left.print_tree(&child_prefix, true, false);
+            right.print_tree(&child_prefix, false, false);
+        }
+    }
 }
 
 impl Ord for HuffTree {
