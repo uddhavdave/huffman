@@ -8,11 +8,10 @@ use std::{
     collections::{BinaryHeap, HashMap},
 };
 
-#[cfg(feature = "alloc")]
 pub fn encode(input: &str) -> Result<Vec<u8>, EncodeError> {
     let mut text = input.to_string();
 
-    // We add a Psuedo EOf to the string
+    // We add a Pseudo EOF to the string
     // This will indicate end of stream while decompression
     text.push(PSEUDO_EOF_CHAR);
 
