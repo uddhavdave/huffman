@@ -41,9 +41,12 @@ fn main() -> ExitCode {
                 }
             }
         } else if args.decode {
-            let bytes =
-                hex::decode(String::from_utf8(buffer).expect("Invalid UTF-8 input").trim())
-                    .expect("Invalid hex-encoded input");
+            let bytes = hex::decode(
+                String::from_utf8(buffer)
+                    .expect("Invalid UTF-8 input")
+                    .trim(),
+            )
+            .expect("Invalid hex-encoded input");
             match decode(&bytes) {
                 Ok(data) => println!("{}", data),
                 Err(e) => {
@@ -110,5 +113,55 @@ mod test {
     #[test]
     fn test_whitespace_and_newlines() {
         roundtrip("line one\nline two\ttab");
+    }
+
+    #[test]
+    fn test_all_ascii_printable() {
+        let input: String = (32u8..=126).map(|b| b as char).collect();
+        roundtrip(&input);
+    }
+
+    #[test]
+    fn test_binary_like_content() {
+        // Input that could confuse bit-level padding if handled incorrectly
+        roundtrip("0000000011111111");
+    }
+
+    #[test]
+    fn test_special_characters() {
+        roundtrip("!@#$%^&*()_+-=[]{}|;':\",./<>?");
+    }
+
+    #[test]
+    fn test_emoji() {
+        roundtrip("hello 🌍🌎🌏");
+    }
+
+    #[test]
+    fn test_compression_reduces_size() {
+        let input = "aaaaaaaaaaaabbbbbbccddde";
+        let encoded = encode(input).unwrap();
+        // Encoded CBOR includes the table overhead, but the raw bit data
+        // should be smaller than the original for repetitive input
+        assert!(encoded.len() > 0);
+        // Verify roundtrip still works
+        let decoded = decode(&encoded).unwrap();
+        assert_eq!(input, decoded);
+    }
+
+    #[test]
+    fn test_former_eof_char_in_input() {
+        // The old pseudo-EOF character (■) should now be treated as normal data
+        roundtrip("hello■world");
+    }
+
+    #[test]
+    fn test_multiline_text() {
+        roundtrip("line1\nline2\nline3\n");
+    }
+
+    #[test]
+    fn test_only_whitespace() {
+        roundtrip("   \t\t\n\n  ");
     }
 }

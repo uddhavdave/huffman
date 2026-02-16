@@ -1,13 +1,11 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-/// This constant is used as an end of file character which will be useful in decoding.
-pub const PSEUDO_EOF_CHAR: char = '■';
-
 #[derive(Serialize, Deserialize, Default)]
 pub struct EncodedData {
     pub table: HuffTable,
     pub data: Vec<u8>,
+    pub bit_count: usize,
 }
 
 #[derive(Default, Debug, Serialize, Deserialize)]
@@ -54,8 +52,14 @@ impl HuffTree {
     fn create_table_from_huff_tree(self, table: &mut HuffTable, coding: String) {
         match self.child {
             [None, None] => {
-                // Leaf node, hence save the bit encoding in the table
-                table.map.insert(self.character.unwrap(), coding);
+                // Leaf node — if coding is empty, this is the only character;
+                // assign it a 1-bit code so it can be encoded.
+                let code = if coding.is_empty() {
+                    "0".to_string()
+                } else {
+                    coding
+                };
+                table.map.insert(self.character.unwrap(), code);
             }
             [Some(left), Some(right)] => {
                 // Traverse inorder
@@ -80,7 +84,6 @@ impl HuffTree {
                 ' ' => "SP".to_string(),
                 '\n' => "LF".to_string(),
                 '\t' => "TAB".to_string(),
-                c if c == PSEUDO_EOF_CHAR => "EOF".to_string(),
                 c => format!("'{}'", c),
             };
             format!("{} (freq: {})", display, self.freq)

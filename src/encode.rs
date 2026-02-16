@@ -1,6 +1,6 @@
 use crate::error::EncodeError;
 use bitvec::prelude::*;
-use huffman::{EncodedData, HuffTable, HuffTree, PSEUDO_EOF_CHAR};
+use huffman::{EncodedData, HuffTable, HuffTree};
 use serde::ser::Serialize as SerializeTrait;
 use serde_cbor::ser::Serializer as CBORSerializer;
 use std::{
@@ -45,7 +45,10 @@ pub fn build_tree(freq_map: &HashMap<char, u32>) -> HuffTree {
     min_freq_pqueue.pop().unwrap().0
 }
 
-pub fn encode_with_table(text: &str, huff_table: &HuffTable) -> Result<BitVec<u8, Msb0>, EncodeError> {
+pub fn encode_with_table(
+    text: &str,
+    huff_table: &HuffTable,
+) -> Result<BitVec<u8, Msb0>, EncodeError> {
     let mut bv = bitvec![u8, Msb0;];
     for letter in text.chars() {
         if let Some(coding) = huff_table.map.get(&letter) {
@@ -62,20 +65,14 @@ pub fn encode_with_table(text: &str, huff_table: &HuffTable) -> Result<BitVec<u8
 }
 
 pub fn encode(input: &str) -> Result<Vec<u8>, EncodeError> {
-    let mut text = input.to_string();
-
-    // We add a Pseudo EOF to the string
-    // This will indicate end of stream while decompression
-    text.push(PSEUDO_EOF_CHAR);
-
-    let freq_map = build_freq_map(&text);
+    let freq_map = build_freq_map(input);
     let huff_tree = build_tree(&freq_map);
     let huff_table = huff_tree.get_huff_table();
-    let bv = encode_with_table(&text, &huff_table)?;
+    let bv = encode_with_table(input, &huff_table)?;
 
-    // Structure for encoding the data along with the Huffman table.
     let data = EncodedData {
         table: huff_table,
+        bit_count: bv.len(),
         data: bv.into_vec(),
     };
 

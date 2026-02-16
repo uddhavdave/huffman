@@ -1,11 +1,7 @@
 use crate::encode::{build_freq_map, build_tree, encode_with_table};
-use huffman::PSEUDO_EOF_CHAR;
 
 pub fn visualize(input: &str) {
-    let mut text = input.to_string();
-    text.push(PSEUDO_EOF_CHAR);
-
-    let freq_map = build_freq_map(&text);
+    let freq_map = build_freq_map(input);
     let huff_tree = build_tree(&freq_map);
 
     // Print frequency table sorted by frequency (descending)
@@ -32,13 +28,19 @@ pub fn visualize(input: &str) {
     codes.sort_by(|a, b| a.1.len().cmp(&b.1.len()).then(a.0.cmp(b.0)));
     for (ch, code) in &codes {
         let display = format_char(**ch);
-        eprintln!("  {:>5}  {:>width$}  ({} bits)", display, code, code.len(), width = codes.last().map_or(1, |c| c.1.len()));
+        eprintln!(
+            "  {:>5}  {:>width$}  ({} bits)",
+            display,
+            code,
+            code.len(),
+            width = codes.last().map_or(1, |c| c.1.len())
+        );
     }
     eprintln!();
 
     // Compression stats
     let original_bits = input.len() * 8;
-    let bv = encode_with_table(&text, &huff_table).unwrap();
+    let bv = encode_with_table(input, &huff_table).unwrap();
     let compressed_bits = bv.len();
     let ratio = if original_bits > 0 {
         (compressed_bits as f64 / original_bits as f64) * 100.0
@@ -46,7 +48,11 @@ pub fn visualize(input: &str) {
         0.0
     };
     eprintln!("--- Compression Stats ---");
-    eprintln!("  Original:   {} bytes ({} bits)", input.len(), original_bits);
+    eprintln!(
+        "  Original:   {} bytes ({} bits)",
+        input.len(),
+        original_bits
+    );
     eprintln!("  Compressed: {} bits", compressed_bits);
     eprintln!("  Ratio:      {:.1}%", ratio);
     eprintln!();
@@ -57,7 +63,6 @@ fn format_char(ch: char) -> String {
         ' ' => "SP".to_string(),
         '\n' => "LF".to_string(),
         '\t' => "TAB".to_string(),
-        c if c == PSEUDO_EOF_CHAR => "EOF".to_string(),
         c => format!("'{}'", c),
     }
 }
