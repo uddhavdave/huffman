@@ -13,12 +13,12 @@ Following command is an example of huffman binary used with piped input:
 ```
 echo "TEXT_TO_COMPRESS" | cargo run -- -e | cargo run -- -d
 ```
-Note that `-e`(encrypt) flag will output CBOR data in hex string, and `-d`(decode) flag
+Note that `-e`(encode) flag will output CBOR data in hex string, and `-d`(decode) flag
 expects the input to be a hex string.
 
-## Assumptions
-1. The code introduces an End-of-File (EOF) character '■' to signal the decoder to cease reading when this character is encountered.
-2. The encoded data is prefixed with the Huffman Table and subsequently serialized in Concise Binary Object Representation (CBOR). 
+## Design
+1. The encoded data stores the total number of meaningful bits alongside the compressed payload. This allows the decoder to know exactly when to stop reading, cleanly handling any padding in the last byte without needing a special end-of-file character.
+2. The encoded data is prefixed with the Huffman Table and subsequently serialized in Concise Binary Object Representation (CBOR).
 
 ## TODO
 

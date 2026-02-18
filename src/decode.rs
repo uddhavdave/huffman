@@ -1,6 +1,6 @@
 use crate::error::EncodeError;
 use bitvec::prelude::*;
-use huffman::{EncodedData, PSEUDO_EOF_CHAR};
+use huffman::EncodedData;
 use serde::Deserialize;
 use serde_cbor::de::Deserializer as CBORDeserializer;
 use std::collections::HashMap;
@@ -14,18 +14,15 @@ pub fn decode(bytes: &[u8]) -> Result<String, EncodeError> {
     let bits: BitVec<u8, Msb0> = BitVec::from_vec(encoded_data.data);
 
     let mut coding = String::new();
-    for bit in bits {
-        if bit {
+    // Only process the meaningful bits, ignoring any padding in the last byte
+    for bit in bits.iter().take(encoded_data.bit_length) {
+        if *bit {
             coding += "1"
         } else {
             coding += "0"
         }
 
         if let Some(value) = rev_huff_table.get(&coding) {
-            if *value == PSEUDO_EOF_CHAR {
-                coding.clear();
-                break;
-            }
             text.push(*value);
             // clear the coding as the mapped character is appended to the string
             coding.clear();

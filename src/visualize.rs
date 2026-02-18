@@ -1,11 +1,7 @@
 use crate::encode::{build_freq_map, build_tree, encode_with_table};
-use huffman::PSEUDO_EOF_CHAR;
 
 pub fn visualize(input: &str) {
-    let mut text = input.to_string();
-    text.push(PSEUDO_EOF_CHAR);
-
-    let freq_map = build_freq_map(&text);
+    let freq_map = build_freq_map(input);
     let huff_tree = build_tree(&freq_map);
 
     // Print frequency table sorted by frequency (descending)
@@ -38,7 +34,7 @@ pub fn visualize(input: &str) {
 
     // Compression stats
     let original_bits = input.len() * 8;
-    let bv = encode_with_table(&text, &huff_table).unwrap();
+    let bv = encode_with_table(input, &huff_table).unwrap();
     let compressed_bits = bv.len();
     let ratio = if original_bits > 0 {
         (compressed_bits as f64 / original_bits as f64) * 100.0
@@ -57,7 +53,6 @@ fn format_char(ch: char) -> String {
         ' ' => "SP".to_string(),
         '\n' => "LF".to_string(),
         '\t' => "TAB".to_string(),
-        c if c == PSEUDO_EOF_CHAR => "EOF".to_string(),
         c => format!("'{}'", c),
     }
 }
